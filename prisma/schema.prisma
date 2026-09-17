@@ -1,0 +1,110 @@
+generator client {
+  provider            = "prisma-client"
+  output              = "../src/generated/prisma"
+  importFileExtension = "ts"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String?
+  createdAt DateTime @default(now())
+  salaries  Salary[]
+  bills     Bill[]
+  shoppingLoans ShoppingLoan[]
+  personalLoans PersonalLoan[]
+}
+
+model Salary {
+  id           String          @id @default(uuid())
+  userId       String
+  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amount       Decimal
+  payPeriod    SalaryPayPeriod @default(MONTHLY)
+  dateReceived DateTime
+  createdAt    DateTime        @default(now())
+}
+
+enum SalaryPayPeriod {
+  MONTHLY
+}
+
+model Bill {
+  id          String     @id @default(uuid())
+  userId      String
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title       String
+  amount      Decimal
+  dueDate     DateTime
+  status      BillStatus @default(PENDING)
+  createdAt   DateTime   @default(now())
+  paymentLogs PaymentLog[]
+}
+
+enum BillStatus {
+  PENDING
+  PAID
+}
+
+model ShoppingLoan {
+  id                 String        @id @default(uuid())
+  userId             String
+  user               User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  itemName           String
+  totalAmount        Decimal
+  interestPercentage Float         @default(0)
+  tenureMonths       Int
+  monthlyInstallment Decimal
+  remainingBalance   Decimal
+  dueDay             Int
+  startDate          DateTime      @default(now())
+  createdAt          DateTime      @default(now())
+  paymentLogs        PaymentLog[]
+}
+
+model PersonalLoan {
+  id               String           @id @default(uuid())
+  userId           String
+  user             User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  personName       String
+  email            String?
+  amount           Decimal
+  type             LoanType
+  status           PersonalLoanStatus @default(UNPAID)
+  tenureMonths     Int
+  monthlyPayment   Decimal
+  isPartialAllowed Boolean          @default(true)
+  notes            String?
+  dueDay           Int
+  startDate        DateTime         @default(now())
+  dueDate          DateTime?
+  createdAt        DateTime         @default(now())
+  paymentLogs      PaymentLog[]
+}
+
+enum LoanType {
+  LENT
+  BORROWED
+}
+
+enum PersonalLoanStatus {
+  UNPAID
+  PARTIALLY_PAID
+  FULLY_PAID
+}
+
+model PaymentLog {
+  id              String        @id @default(uuid())
+  personalLoanId  String?
+  personalLoan    PersonalLoan? @relation(fields: [personalLoanId], references: [id], onDelete: SetNull)
+  shoppingLoanId  String?
+  shoppingLoan    ShoppingLoan? @relation(fields: [shoppingLoanId], references: [id], onDelete: SetNull)
+  billId          String?
+  bill            Bill?         @relation(fields: [billId], references: [id], onDelete: SetNull)
+  amountPaid      Decimal
+  paymentDate     DateTime      @default(now())
+}
